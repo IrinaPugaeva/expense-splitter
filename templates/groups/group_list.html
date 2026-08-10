@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}My groups · ExpenseMate{% endblock %}
+{% block content %}
+<section class="page-heading-row">
+    <div>
+        <p class="eyebrow">Workspace</p>
+        <h1>My groups</h1>
+        <p class="muted">Create a group or open one where you are already a member.</p>
+    </div>
+    <a class="action-button" href="{% url 'group_create' %}">+ Create group</a>
+</section>
+
+<section class="dashboard-grid">
+    <div class="card-panel groups-panel">
+        <div class="section-title-row">
+            <div>
+                <p class="card-kicker">Groups I belong to</p>
+                <h2>Your shared spaces</h2>
+            </div>
+            <span class="counter-badge">{{ memberships|length }}</span>
+        </div>
+
+        {% if memberships %}
+            <div class="group-list">
+                {% for membership in memberships %}
+                    <article class="group-card">
+                        <div class="group-icon">{{ membership.group.title|slice:':1'|upper }}</div>
+                        <div class="group-main">
+                            <h3>{{ membership.group.title }}</h3>
+                            <p>{{ membership.group.description|default:"No description yet." }}</p>
+                            <div class="group-meta">
+                                <span>{{ membership.group.memberships.count }} member{{ membership.group.memberships.count|pluralize }}</span>
+                                <span>{{ membership.group.get_category_display }}</span>
+                                <span>{{ membership.group.get_default_split_display }}</span>
+                            </div>
+                        </div>
+                        <span class="role-badge role-{{ membership.role }}">{{ membership.get_role_display }}</span>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">+</div>
+                <h3>No groups yet</h3>
+                <p>Create your first group to start organising shared expenses.</p>
+                <a class="action-button" href="{% url 'group_create' %}">Create group</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <aside class="card-panel starter-panel">
+        <p class="card-kicker">Starter scope</p>
+        <h2>Implemented now</h2>
+        <ul class="check-list">
+            <li>Email and password login</li>
+            <li>Invalid-login error handling</li>
+            <li>Create a new expense group</li>
+            <li>Automatic Group Admin role</li>
+            <li>Required and 100-character title validation</li>
+        </ul>
+        <p class="scope-note">Expenses, invitations, PayID and payments are intentionally reserved for later iterations.</p>
+    </aside>
+</section>
+{% endblock %}

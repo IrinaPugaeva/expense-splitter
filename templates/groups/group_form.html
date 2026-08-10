@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Create group · ExpenseMate{% endblock %}
+{% block content %}
+<section class="page-heading-row compact-heading">
+    <div>
+        <p class="eyebrow">Group operations · US004</p>
+        <h1>Create group</h1>
+        <p class="muted">After saving, you become the Group Admin for this group.</p>
+    </div>
+</section>
+
+<section class="form-layout">
+    <div class="card-panel form-panel">
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="form-alert" role="alert">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="field-group">
+                <label for="{{ form.title.id_for_label }}">Group title <span aria-hidden="true">*</span></label>
+                {{ form.title }}
+                <p class="field-help">Required. Maximum 100 characters.</p>
+                {% for error in form.title.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            </div>
+
+            <div class="two-column-fields">
+                <div class="field-group">
+                    <label for="{{ form.category.id_for_label }}">Category</label>
+                    {{ form.category }}
+                    {% for error in form.category.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+                <div class="field-group">
+                    <label for="{{ form.default_split.id_for_label }}">Default split</label>
+                    {{ form.default_split }}
+                    {% for error in form.default_split.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+            </div>
+
+            <div class="field-group">
+                <label for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+                <p class="field-help">Optional. Add a short explanation of what the group is for.</p>
+                {% for error in form.description.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            </div>
+
+            <div class="form-actions">
+                <button class="action-button button-element" type="submit">Create group</button>
+                <a class="cancel-button" href="{% url 'group_list' %}">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <aside class="card-panel info-panel">
+        <div class="info-icon">A</div>
+        <p class="card-kicker">Your role</p>
+        <h2>Group Admin</h2>
+        <p>You will be added as the first member and assigned the Admin role automatically.</p>
+        <div class="mini-rule"></div>
+        <p class="muted small-copy">Later versions can add invitations, member removal, expense editing and group deletion.</p>
+    </aside>
+</section>
+{% endblock %}
