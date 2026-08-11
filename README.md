@@ -6,20 +6,6 @@ This repository is a **complete local demonstration build** for the SDM404 proje
 
 ![ExpenseMate login](docs/screenshots/login.png)
 
-## Reference repository
-
-The project was developed as an independent ExpenseMate implementation. The public repository [wkostusiak/ExpenseSplitter](https://github.com/wkostusiak/ExpenseSplitter) was used as a reference for useful high-level ideas:
-
-- a small Django project with server-rendered pages;
-- Bootstrap-compatible responsive UI;
-- ModelForm-based CRUD;
-- expense title/category/date filtering;
-- immediate split summaries;
-- unique-email registration and login;
-- simple local setup and README screenshots.
-
-The ExpenseMate data model, role rules, invitations, custom splits, PayID flow, validation messages, UI, and test data were written specifically for this project. Code from the reference repository was not copied.
-
 ## Implemented user stories
 
 ### Account and profile
