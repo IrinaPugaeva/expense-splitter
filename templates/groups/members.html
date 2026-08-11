@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ group.title }} members · ExpenseMate{% endblock %}
+{% block content %}
+{% if action_error %}<div class="form-alert">{{ action_error }}</div>{% endif %}
+<section class="page-heading-row"><div><p class="eyebrow">Membership management</p><h1>{{ group.title }} — members</h1><p class="muted">View roles and manage invitations.</p></div><a class="cancel-button" href="{% url 'group_detail' group.pk %}">Back to group</a></section>
+<section class="dashboard-grid">
+    <div class="card-panel groups-panel">
+        <div class="section-title-row"><div><p class="card-kicker">Current members</p><h2>{{ memberships|length }} people</h2></div></div>
+        <div class="member-list">
+            {% for item in memberships %}
+                <article class="member-row"><span class="member-avatar">{{ item.user.display_name|slice:':1'|upper }}</span><div><strong>{{ item.user.display_name }}</strong><span>{{ item.user.email }}</span></div><span class="role-badge role-{{ item.role }}">{{ item.get_role_display }}</span>
+                    {% if membership.role == 'admin' and item.role != 'admin' %}<form method="post" action="{% url 'group_remove_member' group.pk item.pk %}" onsubmit="return confirm('Remove this member?')">{% csrf_token %}<button class="small-button danger-outline" type="submit">Remove</button></form>{% endif %}
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+    <aside class="card-panel starter-panel">
+        {% if membership.role == 'admin' %}
+            <p class="card-kicker">Invite member</p><h2>Registered user</h2>
+            <form method="post" action="{% url 'group_invite' group.pk %}" novalidate>{% csrf_token %}<div class="field-group"><label for="{{ form.email.id_for_label }}">Account email</label>{{ form.email }}{% for error in form.email.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div><button class="action-button button-element full-width" type="submit">Send invitation</button></form>
+        {% else %}<p class="scope-note">Only the Group Admin can invite or remove members.</p>{% endif %}
+        {% if pending_invitations %}<div class="mini-rule"></div><p class="card-kicker">Pending</p>{% for invitation in pending_invitations %}<p class="small-copy">{{ invitation.invited_user.email }}{% if invitation.is_expired %} · expired{% endif %}</p>{% endfor %}{% endif %}
+    </aside>
+</section>
+{% endblock %}

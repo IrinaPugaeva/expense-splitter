@@ -1,290 +1,309 @@
 #!/usr/bin/env python3
-"""Generate presentation-style ExpenseMate screenshots without a browser."""
-from __future__ import annotations
+"""Create lightweight presentation previews for the README.
 
+The application itself is server-rendered by Django. These previews are generated with
+Pillow so repository screenshots can be refreshed without starting a browser.
+"""
 from pathlib import Path
+from textwrap import wrap
+
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "docs" / "screenshots"
-OUTPUT.mkdir(parents=True, exist_ok=True)
+OUT = ROOT / "docs" / "screenshots"
+OUT.mkdir(parents=True, exist_ok=True)
 
 W, H = 1440, 900
 BLUE = "#148bd2"
 BLUE_DARK = "#0875b5"
-PURPLE = "#9a5adf"
-PURPLE_DARK = "#7f3dcc"
-GREEN = "#2fbf71"
-RED = "#d94452"
+PURPLE = "#8a43d5"
 INK = "#273148"
 MUTED = "#74809a"
-LINE = "#e5eaf3"
+LINE = "#dfe6f1"
 PAGE = "#f4f8fc"
 WHITE = "#ffffff"
-
+GREEN = "#2b9f60"
+RED = "#c63f4e"
 FONT_DIR = Path("/usr/share/fonts/truetype/dejavu")
 
 
-def font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
-    name = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
-    return ImageFont.truetype(str(FONT_DIR / name), size)
+def font(size, bold=False):
+    return ImageFont.truetype(
+        str(FONT_DIR / ("DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf")), size
+    )
 
 
-def text(draw: ImageDraw.ImageDraw, xy, value: str, size=24, color=INK, bold=False, anchor=None):
-    draw.text(xy, value, fill=color, font=font(size, bold), anchor=anchor)
+def txt(draw, xy, value, size=18, colour=INK, bold=False, anchor=None):
+    draw.text(xy, value, font=font(size, bold), fill=colour, anchor=anchor)
 
 
-def rounded(draw, box, radius=16, fill=WHITE, outline=None, width=1):
-    draw.rounded_rectangle(box, radius=radius, fill=fill, outline=outline, width=width)
+def box(draw, coords, fill=WHITE, outline=LINE, radius=14, width=1):
+    draw.rounded_rectangle(coords, radius=radius, fill=fill, outline=outline, width=width)
 
 
-def wrap(draw, value: str, max_width: int, size=22, bold=False):
-    words = value.split()
-    lines, current = [], ""
-    f = font(size, bold)
-    for word in words:
-        candidate = f"{current} {word}".strip()
-        if draw.textbbox((0, 0), candidate, font=f)[2] <= max_width:
-            current = candidate
-        else:
-            if current:
-                lines.append(current)
-            current = word
-    if current:
-        lines.append(current)
-    return lines
+def lines(draw, value, x, y, width=48, size=16, colour=MUTED, bold=False, step=25):
+    for index, line in enumerate(wrap(value, width)):
+        txt(draw, (x, y + index * step), line, size, colour, bold)
 
 
-def topbar(draw, authenticated=False):
+def shell(auth=True, active="groups"):
+    image = Image.new("RGB", (W, H), PAGE)
+    draw = ImageDraw.Draw(image)
     draw.rectangle((0, 0, W, 64), fill=BLUE)
-    text(draw, (32, 32), "ExpenseMate", 21, WHITE, True, "lm")
-    if authenticated:
-        draw.ellipse((1337, 14, 1373, 50), fill=WHITE)
-        text(draw, (1355, 32), "I", 17, BLUE_DARK, True, "mm")
-        text(draw, (1325, 32), "Irina", 15, WHITE, False, "rm")
+    txt(draw, (30, 32), "ExpenseMate", 21, WHITE, True, "lm")
+    if auth:
+        draw.ellipse((1342, 14, 1378, 50), fill=WHITE)
+        txt(draw, (1360, 32), "I", 16, BLUE_DARK, True, "mm")
+        txt(draw, (1327, 32), "Irina", 14, WHITE, False, "rm")
+        draw.rectangle((0, 64, 220, H), fill=WHITE)
+        nav = [("My groups", "groups"), ("Create group", "create"), ("My payments", "payments"), ("Profile", "profile"), ("Sign out", "logout")]
+        txt(draw, (25, 95), "NAVIGATION", 11, BLUE_DARK, True)
+        y = 120
+        for label, key in nav:
+            if key == active:
+                box(draw, (17, y, 203, y + 42), fill="#e8f5fd", outline="#bfdef0", radius=8)
+            txt(draw, (33, y + 21), label, 14, BLUE_DARK if key == active else "#65718a", key == active, "lm")
+            y += 49
+    return image, draw
 
 
-def sidebar(draw, active: str):
-    draw.rectangle((0, 64, 220, H), fill=WHITE)
-    draw.line((220, 64, 220, H), fill=LINE, width=1)
-    text(draw, (24, 98), "NAVIGATION", 12, BLUE_DARK, True)
-    items = [("My groups", "groups"), ("Create group", "create"), ("Profile · later", "profile"), ("Sign out", "logout")]
-    y = 128
-    for label, key in items:
-        if key == active:
-            rounded(draw, (18, y, 202, y + 44), 9, "#e6f5fe", "#bfe5fa")
-            color, bold = BLUE_DARK, True
-        else:
-            color, bold = ("#a0a8b8", False) if key == "profile" else ("#66718a", False)
-        text(draw, (34, y + 22), label, 15, color, bold, "lm")
-        y += 52
+def heading(draw, eyebrow, title, subtitle, action=None):
+    txt(draw, (270, 105), eyebrow.upper(), 11, BLUE_DARK, True)
+    txt(draw, (270, 137), title, 34, INK, True)
+    txt(draw, (270, 187), subtitle, 15, MUTED)
+    if action:
+        box(draw, (1180, 132, 1375, 178), fill=PURPLE, outline=PURPLE, radius=9)
+        txt(draw, (1277, 155), action, 13, WHITE, True, "mm")
 
 
-def card(draw, box, radius=16):
-    # subtle shadow
-    shadow = (box[0] + 5, box[1] + 7, box[2] + 5, box[3] + 7)
-    rounded(draw, shadow, radius, "#e9eef5")
-    rounded(draw, box, radius, WHITE, LINE)
+def demo_card(draw, heading, values, x, y, width=350):
+    """Draw one compact page-specific data card."""
+    height = 50 + 25 * len(values)
+    box(
+        draw,
+        (x, y, x + width, y + height),
+        fill="#eef2f8",
+        outline="#e1e7f0",
+        radius=12,
+    )
+    txt(draw, (x + 18, y + 17), heading, 12, "#5d6982", True)
+    for index, value in enumerate(values):
+        txt(draw, (x + 18, y + 47 + index * 25), value, 11, "#4d3980")
+
+
+def field(draw, x, y, label, value, width=390, error=None):
+    txt(draw, (x, y), label.upper(), 11, "#4d5870", True)
+    box(draw, (x, y + 22, x + width, y + 70), radius=8)
+    txt(draw, (x + 14, y + 46), value, 14, "#596273", False, "lm")
+    if error:
+        txt(draw, (x, y + 80), error, 11, RED, True)
 
 
 def login(error=False):
-    img = Image.new("RGB", (W, H), "#f5f7fb")
-    draw = ImageDraw.Draw(img)
-    topbar(draw)
-    # soft background shapes
-    draw.ellipse((-180, 160, 520, 860), fill="#eff8fd")
-    draw.ellipse((900, 90, 1540, 760), fill="#f3edfb")
-
-    text(draw, (128, 255), "SHARED EXPENSE MANAGEMENT", 13, BLUE_DARK, True)
-    lines = ["Shared expenses", "made simple"]
-    y = 292
-    for line in lines:
-        text(draw, (128, y), line, 56, PURPLE, True)
-        y += 66
-    subtitle = "Create groups, split expenses and track shares in one clear place."
-    for line in wrap(draw, subtitle, 530, 21):
-        text(draw, (128, y + 10), line, 21, "#58657d")
-        y += 32
-    pills = ["Responsive web app", "Role-based groups", "Simple local demo"]
-    x = 128
-    for p in pills:
-        w = draw.textbbox((0, 0), p, font=font(13, True))[2] + 30
-        rounded(draw, (x, 550, x + w, 586), 18, WHITE, "#dde5f0")
-        text(draw, (x + 15, 568), p, 13, "#66718a", True, "lm")
-        x += w + 10
-
-    box = (870, 150, 1282, 760)
-    card(draw, box, 18)
-    text(draw, (910, 190), "WELCOME BACK", 12, BLUE_DARK, True)
-    text(draw, (910, 224), "Sign in", 31, INK, True)
-    text(draw, (910, 268), "Use the demo account or your registered", 14, MUTED)
-    text(draw, (910, 291), "ExpenseMate account.", 14, MUTED)
-
-    y = 330
+    image, draw = shell(auth=False)
+    draw.ellipse((-250, 150, 500, 900), fill="#ecf7fd")
+    draw.ellipse((980, 80, 1600, 720), fill="#f3ecfb")
+    txt(draw, (120, 250), "SHARED EXPENSE MANAGEMENT", 12, BLUE_DARK, True)
+    txt(draw, (120, 295), "Shared expenses", 50, PURPLE, True)
+    txt(draw, (120, 355), "made simple", 50, PURPLE, True)
+    lines(draw, "Create groups, split expenses and track shares in one clear place.", 120, 435, 50, 18, "#59657c")
+    box(draw, (820, 115, 1285, 850), radius=18)
+    txt(draw, (860, 160), "WELCOME BACK", 12, BLUE_DARK, True)
+    txt(draw, (860, 200), "Sign in", 31, INK, True)
+    txt(draw, (860, 245), "Use a demo account or your registered account.", 14, MUTED)
+    y = 290
     if error:
-        rounded(draw, (910, y, 1242, y + 54), 9, "#fff1f2", "#f3b8bd")
-        text(draw, (926, y + 17), "Invalid email or password.", 14, "#a52a36", True)
-        text(draw, (926, y + 36), "Please try again.", 14, "#a52a36", True)
-        y += 76
-
-    text(draw, (910, y), "EMAIL", 12, "#4a556d", True)
-    rounded(draw, (910, y + 24, 1242, y + 72), 8, WHITE, "#d9e0eb")
-    text(draw, (924, y + 48), "irina@torrens.edu.au", 15, INK, False, "lm")
-    y += 96
-    text(draw, (910, y), "PASSWORD", 12, "#4a556d", True)
-    rounded(draw, (910, y + 24, 1242, y + 72), 8, WHITE, "#d9e0eb")
-    text(draw, (924, y + 48), "••••••••••••••", 17, INK, False, "lm")
-    y += 94
-    rounded(draw, (910, y, 1242, y + 48), 8, PURPLE_DARK)
-    text(draw, (1076, y + 24), "SIGN IN", 14, WHITE, True, "mm")
-    y += 60
-    rounded(draw, (910, y, 1242, y + 46), 8, "#ffffff", "#cfd7e5")
-    text(draw, (1076, y + 23), "CREATE ACCOUNT — LATER", 13, "#9aa3b3", True, "mm")
-    y += 72
-    rounded(draw, (910, y, 1242, y + 86), 10, "#f5f8fc")
-    text(draw, (926, y + 18), "DEMO ACCOUNT", 11, "#5e6980", True)
-    text(draw, (926, y + 42), "irina@torrens.edu.au", 13, "#4d3980")
-    text(draw, (926, y + 64), "ExpenseMate123!", 13, "#4d3980")
-    return img
+        box(draw, (860, y, 1245, y + 52), fill="#fff1f2", outline="#efb6bd", radius=8)
+        txt(draw, (878, y + 26), "Invalid credentials.", 13, RED, True, "lm")
+        y += 72
+    field(draw, 860, y, "Email", "irina@test.com", 385)
+    field(draw, 860, y + 105, "Password", "••••••••••••", 385)
+    box(draw, (860, y + 220, 1245, y + 270), fill=PURPLE, outline=PURPLE, radius=8)
+    txt(draw, (1052, y + 245), "SIGN IN", 14, WHITE, True, "mm")
+    txt(draw, (860, y + 295), "Create account", 12, BLUE_DARK, True)
+    txt(draw, (1245, y + 295), "Forgot password?", 12, BLUE_DARK, True, "rm")
+    demo_card(draw, "Demo account", ["irina@test.com", "Password1234"], 860, y + 330, 385)
+    return image
 
 
 def groups_page():
-    img = Image.new("RGB", (W, H), PAGE)
-    draw = ImageDraw.Draw(img)
-    topbar(draw, True)
-    sidebar(draw, "groups")
-
-    text(draw, (268, 114), "WORKSPACE", 12, BLUE_DARK, True)
-    text(draw, (268, 145), "My groups", 36, INK, True)
-    text(draw, (268, 194), "Create a group or open one where you are already a member.", 16, MUTED)
-    rounded(draw, (1178, 132, 1376, 180), 9, PURPLE_DARK)
-    text(draw, (1277, 156), "+  CREATE GROUP", 13, WHITE, True, "mm")
-
-    main = (268, 236, 1015, 776)
-    side = (1040, 236, 1376, 776)
-    card(draw, main)
-    card(draw, side)
-    text(draw, (298, 270), "GROUPS I BELONG TO", 12, BLUE_DARK, True)
-    text(draw, (298, 300), "Your shared spaces", 23, INK, True)
-    draw.line((298, 338, 985, 338), fill=LINE, width=1)
-    rounded(draw, (936, 269, 975, 308), 20, "#edf8ff")
-    text(draw, (955, 288), "2", 14, BLUE_DARK, True, "mm")
-
-    def group_card(y, initial, title_value, desc, meta):
-        rounded(draw, (296, y, 986, y + 138), 12, WHITE, LINE)
-        rounded(draw, (318, y + 28, 366, y + 76), 12, "#e8efff")
-        text(draw, (342, y + 52), initial, 20, PURPLE_DARK, True, "mm")
-        text(draw, (388, y + 26), title_value, 20, INK, True)
-        text(draw, (388, y + 58), desc, 14, MUTED)
-        text(draw, (388, y + 91), meta, 12, "#8993a7")
-        rounded(draw, (884, y + 48, 960, y + 80), 16, "#fff3d5")
-        text(draw, (922, y + 64), "Admin", 12, "#9a6500", True, "mm")
-
-    group_card(360, "G", "Grocery", "Weekly food and household shopping", "4 members   ·   Household   ·   Equal split")
-    group_card(516, "S", "Summer trip", "Shared travel expenses", "3 members   ·   Travel   ·   Equal split")
-
-    text(draw, (1070, 270), "STARTER SCOPE", 12, BLUE_DARK, True)
-    text(draw, (1070, 300), "Implemented now", 23, INK, True)
-    checks = [
-        "Email and password login",
-        "Invalid-login error handling",
-        "Create a new expense group",
-        "Automatic Group Admin role",
-        "Required and 100-character title validation",
-    ]
-    y = 352
-    for value in checks:
-        draw.ellipse((1070, y, 1090, y + 20), fill="#e8f9ef")
-        text(draw, (1080, y + 10), "✓", 12, "#168348", True, "mm")
-        for i, line in enumerate(wrap(draw, value, 246, 14)):
-            text(draw, (1104, y + i * 20 + 1), line, 14, "#566179")
-        y += 60 if len(wrap(draw, value, 246, 14)) > 1 else 43
-    rounded(draw, (1070, 631, 1346, 739), 10, "#faf7ff")
-    note = "Expenses, invitations, PayID and payments are intentionally reserved for later iterations."
-    yy = 651
-    for line in wrap(draw, note, 242, 13):
-        text(draw, (1086, yy), line, 13, "#76658f")
-        yy += 21
-    return img
+    image, draw = shell(True, "groups")
+    heading(draw, "Workspace", "My groups", "Open a group, create one, or respond to an invitation.", "+ CREATE GROUP")
+    box(draw, (270, 230, 1008, 770))
+    txt(draw, (300, 263), "GROUPS I BELONG TO", 11, BLUE_DARK, True)
+    txt(draw, (300, 296), "Your shared spaces", 21, INK, True)
+    y = 345
+    for initial, title, desc, role in [
+        ("F", "Flatmates", "Shared household costs", "Admin"),
+        ("G", "Grocery", "Weekly food and household shopping", "Admin"),
+        ("S", "Summer trip", "Shared travel expenses", "Admin"),
+    ]:
+        box(draw, (300, y, 978, y + 116), radius=11)
+        box(draw, (322, y + 25, 368, y + 71), fill="#e8efff", outline="#e8efff", radius=12)
+        txt(draw, (345, y + 48), initial, 18, PURPLE, True, "mm")
+        txt(draw, (390, y + 25), title, 18, INK, True)
+        txt(draw, (390, y + 55), desc, 13, MUTED)
+        txt(draw, (390, y + 83), "4 members · Equal split", 11, "#8c96aa")
+        box(draw, (882, y + 40, 952, y + 72), fill="#fff4d9", outline="#fff4d9", radius=16)
+        txt(draw, (917, y + 56), role, 11, "#946600", True, "mm")
+        y += 130
+    box(draw, (1032, 230, 1380, 520))
+    txt(draw, (1060, 264), "PENDING INVITATIONS", 11, BLUE_DARK, True)
+    txt(draw, (1060, 297), "Groups waiting for you", 20, INK, True)
+    box(draw, (1060, 340, 1350, 454), radius=10)
+    txt(draw, (1080, 365), "Online shopping", 16, INK, True)
+    txt(draw, (1080, 393), "Invited by Jobaida", 12, MUTED)
+    box(draw, (1080, 414, 1154, 446), fill="#e5f8ed", outline="#e5f8ed", radius=7)
+    txt(draw, (1117, 430), "ACCEPT", 10, GREEN, True, "mm")
+    box(draw, (1163, 414, 1240, 446), fill=WHITE, outline="#edbdc3", radius=7)
+    txt(draw, (1201, 430), "DECLINE", 10, RED, True, "mm")
+    demo_card(draw, "Demo groups", ["Flatmates", "Grocery", "Summer trip"], 1032, 545, 348)
+    return image
 
 
-def create_page(error=False):
-    img = Image.new("RGB", (W, H), PAGE)
-    draw = ImageDraw.Draw(img)
-    topbar(draw, True)
-    sidebar(draw, "create")
-    text(draw, (268, 114), "GROUP OPERATIONS · US004", 12, BLUE_DARK, True)
-    text(draw, (268, 145), "Create group", 36, INK, True)
-    text(draw, (268, 194), "After saving, you become the Group Admin for this group.", 16, MUTED)
-
-    form_box = (268, 236, 980, 810)
-    info_box = (1005, 236, 1376, 610)
-    card(draw, form_box)
-    card(draw, info_box)
-
-    x1, x2 = 300, 948
-    y = 276
-    text(draw, (x1, y), "GROUP TITLE *", 12, "#4a556d", True)
-    rounded(draw, (x1, y + 24, x2, y + 72), 8, WHITE, "#d9e0eb")
-    if not error:
-        text(draw, (x1 + 14, y + 48), "Flatmates", 15, INK, False, "lm")
-    text(draw, (x1, y + 82), "Required. Maximum 100 characters.", 12, "#8a95aa")
-    if error:
-        text(draw, (x1, y + 103), "Group title is required.", 13, RED, True)
-        offset = 24
-    else:
-        offset = 0
-    y += 132 + offset
-    text(draw, (x1, y), "CATEGORY", 12, "#4a556d", True)
-    text(draw, (635, y), "DEFAULT SPLIT", 12, "#4a556d", True)
-    rounded(draw, (x1, y + 24, 612, y + 72), 8, WHITE, "#d9e0eb")
-    rounded(draw, (635, y + 24, x2, y + 72), 8, WHITE, "#d9e0eb")
-    text(draw, (x1 + 14, y + 48), "Household", 15, INK, False, "lm")
-    text(draw, (649, y + 48), "Equal split", 15, INK, False, "lm")
-    text(draw, (588, y + 48), "⌄", 17, MUTED, False, "mm")
-    text(draw, (924, y + 48), "⌄", 17, MUTED, False, "mm")
-    y += 108
-    text(draw, (x1, y), "DESCRIPTION", 12, "#4a556d", True)
-    rounded(draw, (x1, y + 24, x2, y + 150), 8, WHITE, "#d9e0eb")
-    text(draw, (x1 + 14, y + 44), "Shared household expenses", 15, INK)
-    text(draw, (x1, y + 160), "Optional. Add a short explanation of what the group is for.", 12, "#8a95aa")
-    y += 205
-    rounded(draw, (x1, y, x1 + 175, y + 48), 8, PURPLE_DARK)
-    text(draw, (x1 + 88, y + 24), "CREATE GROUP", 13, WHITE, True, "mm")
-    rounded(draw, (x1 + 190, y, x1 + 300, y + 48), 8, WHITE, "#cfd7e5")
-    text(draw, (x1 + 245, y + 24), "CANCEL", 13, "#66718a", True, "mm")
-
-    draw.ellipse((1035, 272, 1083, 320), fill="#e8f8ef")
-    text(draw, (1059, 296), "A", 18, "#19884d", True, "mm")
-    text(draw, (1035, 348), "YOUR ROLE", 12, BLUE_DARK, True)
-    text(draw, (1035, 380), "Group Admin", 25, INK, True)
-    p = "You will be added as the first member and assigned the Admin role automatically."
-    yy = 425
-    for line in wrap(draw, p, 300, 15):
-        text(draw, (1035, yy), line, 15, "#68738a")
-        yy += 24
-    draw.line((1035, 514, 1345, 514), fill=LINE, width=1)
-    p2 = "Later versions can add invitations, member removal, expense editing and group deletion."
-    yy = 540
-    for line in wrap(draw, p2, 300, 13):
-        text(draw, (1035, yy), line, 13, MUTED)
-        yy += 21
-    return img
+def create_group():
+    image, draw = shell(True, "create")
+    heading(draw, "Group operations · US004", "Create group", "After saving, you become the Group Admin.")
+    box(draw, (270, 230, 960, 765))
+    field(draw, 305, 275, "Group title", "Flatmates 2", 620)
+    field(draw, 305, 380, "Category", "Household", 290)
+    field(draw, 635, 380, "Default split", "Equal split", 290)
+    field(draw, 305, 485, "Description", "Shared costs", 620)
+    box(draw, (305, 625, 465, 673), fill=PURPLE, outline=PURPLE, radius=8)
+    txt(draw, (385, 649), "CREATE GROUP", 12, WHITE, True, "mm")
+    box(draw, (995, 230, 1378, 565))
+    box(draw, (1035, 270, 1090, 325), fill="#e6f8ed", outline="#e6f8ed", radius=28)
+    txt(draw, (1062, 297), "A", 21, GREEN, True, "mm")
+    txt(draw, (1035, 360), "YOUR ROLE", 11, BLUE_DARK, True)
+    txt(draw, (1035, 395), "Group Admin", 25, INK, True)
+    lines(draw, "You will be added as the first member and assigned the Admin role automatically.", 1035, 438, 34, 15, MUTED)
+    txt(draw, (1035, 525), "Future: direct payments, cloud hosting, email delivery.", 11, MUTED)
+    demo_card(draw, "Demo group", ["Title: Flatmates 2", "Description: Shared costs"], 995, 590, 383)
+    return image
 
 
-def main():
-    images = {
-        "login.png": login(False),
-        "invalid-login.png": login(True),
-        "my-groups.png": groups_page(),
-        "create-group.png": create_page(False),
-        "invalid-group.png": create_page(True),
-    }
-    for name, image in images.items():
-        path = OUTPUT / name
-        image.save(path, optimize=True)
-        print(f"Rendered {path.relative_to(ROOT)}")
+def group_dashboard():
+    image, draw = shell(True, "groups")
+    heading(draw, "Group dashboard · US008", "Flatmates", "Shared household costs", "+ ADD EXPENSE")
+    box(draw, (270, 230, 1005, 770))
+    txt(draw, (300, 267), "RECENT EXPENSES", 11, BLUE_DARK, True)
+    y = 315
+    for title, meta, amount, status in [
+        ("Dinner", "Paid by Irina · due in 3 days", "AUD 60.00", "Open"),
+        ("Electricity bill", "Paid by Samesh · overdue", "AUD 160.40", "Overdue"),
+        ("Internet", "Paid by Jobaida", "AUD 79.00", "Settled"),
+    ]:
+        box(draw, (300, y, 975, y + 92), radius=10)
+        txt(draw, (322, y + 24), title, 16, INK, True)
+        txt(draw, (322, y + 53), meta, 12, MUTED)
+        txt(draw, (950, y + 25), amount, 14, INK, True, "rm")
+        txt(draw, (950, y + 55), status, 11, GREEN if status == "Settled" else RED if status == "Overdue" else "#966800", True, "rm")
+        y += 108
+    box(draw, (1030, 230, 1380, 580))
+    txt(draw, (1060, 267), "GROUP MEMBERS", 11, BLUE_DARK, True)
+    for index, (name, role) in enumerate([("Irina", "Admin"), ("Nicolas", "Member"), ("Jobaida", "Member"), ("Samesh", "Member")]):
+        yy = 310 + index * 55
+        draw.ellipse((1060, yy, 1094, yy + 34), fill="#e9f6fd")
+        txt(draw, (1077, yy + 17), name[0], 12, BLUE_DARK, True, "mm")
+        txt(draw, (1110, yy + 17), name, 13, INK, True, "lm")
+        txt(draw, (1348, yy + 17), role, 11, MUTED, False, "rm")
+    demo_card(draw, "Demo group", ["Flatmates", "Check members, roles and expenses"], 1030, 605, 350)
+    return image
 
 
-if __name__ == "__main__":
-    main()
+def add_expense():
+    image, draw = shell(True, "groups")
+    heading(draw, "Expense management · US009–US012", "Flatmates — add expense", "Choose payer, participants, and split method.")
+    box(draw, (270, 230, 940, 790))
+    field(draw, 305, 270, "Title", "Demo lunch", 285)
+    field(draw, 620, 270, "Amount (AUD)", "60.00", 285)
+    field(draw, 305, 370, "Date", "2026-08-10", 285)
+    field(draw, 620, 370, "Category", "Food", 285)
+    field(draw, 305, 470, "Paid by", "Irina", 285)
+    field(draw, 620, 470, "Due date", "2026-08-13", 285)
+    field(draw, 305, 570, "Description", "Lunch after class", 600)
+    box(draw, (305, 690, 465, 738), fill=PURPLE, outline=PURPLE, radius=8)
+    txt(draw, (385, 714), "SAVE EXPENSE", 12, WHITE, True, "mm")
+    box(draw, (970, 230, 1380, 650))
+    txt(draw, (1000, 270), "SPLIT SETUP", 11, BLUE_DARK, True)
+    field(draw, 1000, 300, "Split method", "Equal", 340)
+    txt(draw, (1000, 405), "PARTICIPANTS", 11, "#4d5870", True)
+    for index, name in enumerate(["Irina", "Nicolas", "Jobaida", "Samesh"]):
+        yy = 438 + index * 43
+        draw.rectangle((1002, yy, 1020, yy + 18), outline=BLUE_DARK, width=2)
+        if name != "Samesh":
+            draw.line((1006, yy + 9, 1011, yy + 14), fill=GREEN, width=2)
+            draw.line((1011, yy + 14, 1018, yy + 4), fill=GREEN, width=2)
+        txt(draw, (1034, yy + 9), name, 13, INK, False, "lm")
+    demo_card(draw, "Demo expense", ["Title: Demo lunch", "Amount: AUD 60.00", "Payer: Irina · 3 participants"], 970, 675, 410)
+    return image
+
+
+def expense_detail():
+    image, draw = shell(True, "groups")
+    heading(draw, "Expense details · US014–US016", "Flatmates — Dinner", "Paid by Irina · due in 3 days")
+    box(draw, (270, 230, 1005, 770))
+    for index, (label, value) in enumerate([("TOTAL", "AUD 60.00"), ("CATEGORY", "Food"), ("SPLIT", "Equal")]):
+        x = 300 + index * 220
+        box(draw, (x, 270, x + 190, 345), fill="#f7f9fc", outline="#f7f9fc", radius=9)
+        txt(draw, (x + 16, 288), label, 10, MUTED, True)
+        txt(draw, (x + 16, 315), value, 17, INK, True)
+    txt(draw, (300, 390), "PARTICIPANTS AND SHARES", 11, BLUE_DARK, True)
+    for index, (name, meta, amount, status) in enumerate([
+        ("Irina", "Payer", "20.00", "Paid"),
+        ("Nicolas", "Owes Irina", "20.00", "Unpaid"),
+        ("Jobaida", "Owes Irina", "20.00", "Paid"),
+    ]):
+        y = 430 + index * 90
+        box(draw, (300, y, 975, y + 72), radius=9)
+        txt(draw, (325, y + 22), name, 15, INK, True)
+        txt(draw, (325, y + 48), meta, 11, MUTED)
+        txt(draw, (820, y + 35), "AUD " + amount, 13, INK, True, "rm")
+        txt(draw, (945, y + 35), status, 11, GREEN if status == "Paid" else "#946600", True, "rm")
+    box(draw, (1030, 230, 1380, 590), fill="#f5fff8")
+    txt(draw, (1060, 270), "MY PAYMENT", 11, BLUE_DARK, True)
+    txt(draw, (1060, 310), "AUD 20.00", 27, INK, True)
+    txt(draw, (1060, 355), "PAYER PAYID", 10, MUTED, True)
+    txt(draw, (1060, 385), "irina@payid.bank", 14, "#285f43")
+    box(draw, (1060, 420, 1170, 458), fill="#e5f8ed", outline="#e5f8ed", radius=7)
+    txt(draw, (1115, 439), "COPY PAYID", 10, GREEN, True, "mm")
+    box(draw, (1060, 475, 1328, 523), fill=PURPLE, outline=PURPLE, radius=8)
+    txt(draw, (1194, 499), "MARK AS PAID", 12, WHITE, True, "mm")
+    demo_card(draw, "Demo payment", ["Login: nicolas@test.com", "PayID: irina@payid.bank", "Click Copy PayID"], 1030, 615, 350)
+    return image
+
+
+def payments():
+    image, draw = shell(True, "payments")
+    heading(draw, "Payment flow · US015–US017", "My payments", "View paid, unpaid, due-tomorrow, and overdue shares.")
+    box(draw, (270, 230, 1005, 700))
+    y = 285
+    for title, meta, amount, status in [
+        ("Water bill", "Flatmates · due tomorrow", "AUD 40.00", "Payment due tomorrow"),
+        ("Electricity bill", "Flatmates · due 5 days ago", "AUD 40.10", "Overdue"),
+        ("Internet", "Flatmates · paid", "AUD 19.75", "Paid"),
+    ]:
+        box(draw, (300, y, 975, y + 92), radius=10)
+        txt(draw, (325, y + 25), title, 16, INK, True)
+        txt(draw, (325, y + 55), meta, 12, MUTED)
+        txt(draw, (950, y + 26), amount, 14, INK, True, "rm")
+        txt(draw, (950, y + 57), status, 10, GREEN if status == "Paid" else RED if status == "Overdue" else "#946600", True, "rm")
+        y += 108
+    demo_card(draw, "Demo statuses", ["Water bill: due tomorrow", "Electricity bill: overdue", "Internet: paid"], 1030, 230, 350)
+    return image
+
+
+SCREENS = {
+    "login.png": login(False),
+    "invalid-login.png": login(True),
+    "my-groups.png": groups_page(),
+    "create-group.png": create_group(),
+    "group-dashboard.png": group_dashboard(),
+    "add-expense.png": add_expense(),
+    "expense-detail.png": expense_detail(),
+    "my-payments.png": payments(),
+}
+
+for filename, image in SCREENS.items():
+    image.save(OUT / filename)
+    print(OUT / filename)

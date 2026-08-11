@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Delete {{ group.title }} · ExpenseMate{% endblock %}
+{% block content %}
+<section class="confirm-shell card-panel">
+    <p class="card-kicker">Group operations · US022</p><h1>Delete {{ group.title }}?</h1><p class="muted">The group can only be deleted after every share is paid.</p>
+    {% if action_error %}<div class="form-alert">{{ action_error }}</div>{% endif %}
+    <form method="post">{% csrf_token %}<div class="form-actions"><button class="danger-button" type="submit">Delete group</button><a class="cancel-button" href="{% url 'group_detail' group.pk %}">Cancel</a></div></form>
+</section>
+{% endblock %}

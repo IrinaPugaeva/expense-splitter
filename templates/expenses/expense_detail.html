@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ expense.title }} · ExpenseMate{% endblock %}
+{% block content %}
+<section class="page-heading-row"><div><p class="eyebrow">Expense details · US014–US016</p><h1>{{ group.title }} — {{ expense.title }}</h1><p class="muted">Paid by {{ expense.payer.display_name }} · {{ expense.date }} · due {{ expense.due_date }}</p></div><div class="heading-actions">{% if membership.role == 'admin' %}<a class="cancel-button" href="{% url 'expense_edit' expense.pk %}">Edit expense</a><a class="cancel-button" href="{% url 'expense_split_correct' expense.pk %}">Correct split</a><a class="danger-link" href="{% url 'expense_delete' expense.pk %}">Delete expense</a>{% endif %}</div></section>
+<nav class="subnav"><a href="{% url 'group_detail' group.pk %}">Overview</a><a class="active" href="{% url 'expense_list' group.pk %}">Expenses</a><a href="{% url 'group_members' group.pk %}">Members</a></nav>
+<section class="dashboard-grid">
+    <div class="card-panel groups-panel">
+        <div class="expense-summary"><div><span>Total amount</span><strong>AUD {{ expense.amount }}</strong></div><div><span>Category</span><strong>{{ expense.get_category_display }}</strong></div><div><span>Split</span><strong>{{ expense.get_split_method_display }}</strong></div></div>
+        <p class="description-box">{{ expense.description }}</p>
+        <div class="section-title-row"><div><p class="card-kicker">Participants and shares</p><h2>{{ shares|length }} people</h2></div></div>
+        <div class="member-list">{% for share in shares %}<article class="member-row"><span class="member-avatar">{{ share.user.display_name|slice:':1'|upper }}</span><div><strong>{{ share.user.display_name }}</strong><span>{% if share.user_id == expense.payer_id %}Payer{% else %}Owes {{ expense.payer.display_name }}{% endif %}</span></div><strong>AUD {{ share.amount }}</strong><span class="status-badge status-{{ share.display_status|slugify }}">{{ share.display_status }}</span></article>{% endfor %}</div>
+    </div>
+    <aside class="card-panel starter-panel">
+        <p class="card-kicker">My payment</p>
+        {% if my_share %}<h2>AUD {{ my_share.amount }}</h2><p class="muted">Status: {{ my_share.display_status }}</p>{% if user.pk != expense.payer_id %}<div class="payment-box"><label>Payer PayID</label><code id="payer-payid">{{ expense.payer.payid|default:'PayID not provided' }}</code>{% if expense.payer.payid %}<button class="small-button success-button" type="button" data-copy-target="payer-payid">Copy PayID</button>{% endif %}</div>{% endif %}{% if can_mark_paid %}<form method="post" action="{% url 'expense_mark_paid' expense.pk %}" onsubmit="return confirm('Mark your share as paid?')">{% csrf_token %}<button class="action-button button-element full-width" type="submit">Mark as paid</button></form>{% endif %}{% else %}<p class="scope-note">You are not a participant in this expense.</p>{% endif %}
+    </aside>
+</section>
+<script>
+document.querySelectorAll('[data-copy-target]').forEach(function (button) {
+  button.addEventListener('click', function () {
+    const text = document.getElementById(button.dataset.copyTarget).textContent.trim();
+    navigator.clipboard.writeText(text).then(function () { button.textContent = 'Copied'; });
+  });
+});
+</script>
+{% endblock %}

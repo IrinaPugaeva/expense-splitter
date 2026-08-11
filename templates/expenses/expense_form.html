@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'edit' %}Edit expense{% else %}Add expense{% endif %} · ExpenseMate{% endblock %}
+{% block content %}
+<section class="page-heading-row compact-heading"><div><p class="eyebrow">Expense management · {% if mode == 'edit' %}US019{% else %}US009–US012{% endif %}</p><h1>{{ group.title }} — {% if mode == 'edit' %}edit expense{% else %}add expense{% endif %}</h1><p class="muted">Choose the payer, participants, and split method.</p></div></section>
+<form method="post" novalidate>{% csrf_token %}
+<section class="expense-form-grid">
+    <div class="card-panel form-panel">
+        {% if form.non_field_errors %}<div class="form-alert">{% for error in form.non_field_errors %}{{ error }}{% endfor %}</div>{% endif %}
+        <div class="two-column-fields"><div class="field-group"><label for="{{ form.title.id_for_label }}">Title *</label>{{ form.title }}{% for error in form.title.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div><div class="field-group"><label for="{{ form.amount.id_for_label }}">Amount (AUD) *</label>{{ form.amount }}{% for error in form.amount.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div></div>
+        <div class="two-column-fields"><div class="field-group"><label for="{{ form.date.id_for_label }}">Date *</label>{{ form.date }}{% for error in form.date.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div><div class="field-group"><label for="{{ form.category.id_for_label }}">Category *</label>{{ form.category }}{% for error in form.category.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div></div>
+        <div class="two-column-fields"><div class="field-group"><label for="{{ form.payer.id_for_label }}">Paid by *</label>{{ form.payer }}{% for error in form.payer.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div><div class="field-group"><label for="{{ form.due_date.id_for_label }}">Due date *</label>{{ form.due_date }}{% for error in form.due_date.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div></div>
+        <div class="field-group"><label for="{{ form.description.id_for_label }}">Description *</label>{{ form.description }}{% for error in form.description.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>
+        <div class="form-actions"><button class="action-button button-element" type="submit">{% if mode == 'edit' %}Save changes{% else %}Save expense{% endif %}</button><a class="cancel-button" href="{% if expense %}{% url 'expense_detail' expense.pk %}{% else %}{% url 'group_detail' group.pk %}{% endif %}">Cancel</a></div>
+    </div>
+    <aside class="card-panel starter-panel split-panel">
+        <p class="card-kicker">Split setup</p>
+        <div class="field-group"><label for="{{ form.split_method.id_for_label }}">Split method</label>{{ form.split_method }}{% for error in form.split_method.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>
+        <div class="field-group participant-field"><label>Participants *</label>{{ form.participants }}{% for error in form.participants.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>
+        <div class="custom-share-box" data-custom-shares>
+            <div class="mini-rule"></div><p class="card-kicker">Custom amounts</p>
+            {% for row in form.participant_rows %}<div class="custom-share-row"><span>{{ row.user.display_name }}</span>{{ row.share_field }}{% for error in row.share_field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>{% endfor %}
+        </div>
+    </aside>
+</section></form>
+<script>
+(function () {
+  const select = document.querySelector('[data-split-select]');
+  const box = document.querySelector('[data-custom-shares]');
+  function update() { if (select && box) box.hidden = select.value !== 'custom'; }
+  if (select) { select.addEventListener('change', update); update(); }
+})();
+</script>
+{% endblock %}

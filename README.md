@@ -1,284 +1,324 @@
 # ExpenseMate
 
-ExpenseMate is a responsive Django web application for managing shared expenses between students, roommates, friends, or travel groups. The complete project scope includes groups, memberships, expenses, split calculations, PayID details, payment statuses, reminders, and role-based permissions.
+ExpenseMate is a responsive Django web application for students, roommates, friends, and travel groups who need to record shared costs, divide expenses, and track payment status in one place.
 
-This repository is an intentionally small **starter MVP**. It implements two foundational user stories from the ExpenseMate requirements:
-
-- **US002 — Login:** a registered user signs in with email and password.
-- **US004 — Create Group:** a registered user creates a group and automatically becomes its Group Admin.
-
-The starter also includes the minimum **My Groups** screen needed to demonstrate navigation and confirm that a newly created group was saved.
+This repository is a **complete local demonstration build** for the SDM404 project. It implements the functional user stories and validation/permission scenarios listed in the supplied Assessment 3 test plan while keeping the code intentionally straightforward.
 
 ![ExpenseMate login](docs/screenshots/login.png)
 
-## Implemented functionality
+## Reference repository
 
-### Login and authentication
+The project was developed as an independent ExpenseMate implementation. The public repository [wkostusiak/ExpenseSplitter](https://github.com/wkostusiak/ExpenseSplitter) was used as a reference for useful high-level ideas:
 
-- Login with a unique email address and password.
-- Passwords are handled using Django's built-in password hashing.
-- Invalid credentials display a generic message:
-  `Invalid email or password. Please try again.`
-- Unauthenticated users are redirected to the login page.
-- Authenticated users who open the login page are redirected to **My Groups**.
-- Sessions are configured to expire after 40 minutes of inactivity.
+- a small Django project with server-rendered pages;
+- Bootstrap-compatible responsive UI;
+- ModelForm-based CRUD;
+- expense title/category/date filtering;
+- immediate split summaries;
+- unique-email registration and login;
+- simple local setup and README screenshots.
 
-### Create Group
+The ExpenseMate data model, role rules, invitations, custom splits, PayID flow, validation messages, UI, and test data were written specifically for this project. Code from the reference repository was not copied.
 
-- Create a group with:
-  - group title;
-  - category;
-  - default split method;
-  - optional description.
-- The signed-in creator is saved as the group's creator.
-- An Admin membership is created automatically in the same database transaction.
-- An empty title is rejected with `Group title is required.`
-- A title longer than 100 characters is rejected with `Group title must be 100 characters or fewer.`
-- The **My Groups** page only displays groups where the current user has a membership.
+## Implemented user stories
 
-![ExpenseMate groups](docs/screenshots/my-groups.png)
+### Account and profile
 
-![ExpenseMate create group](docs/screenshots/create-group.png)
+- **US001:** registration with name, unique email, password, and confirmation;
+- **US002:** email/password login with separate wrong-password and unknown-account messages;
+- **US003:** add or update PayID;
+- **US024:** simplified local password reset.
 
-## Current scope boundaries
+### Groups and membership
 
-The following requirements are intentionally not implemented in this first starter:
+- **US004:** create group and automatically become Group Admin;
+- **US005:** view all groups where the user is a member;
+- **US006:** invite an existing registered user;
+- **US007:** view, accept, or decline invitations;
+- **US008:** view group details, members, roles, and recent expenses;
+- **US018:** leave a group after personal payment obligations are complete;
+- **US020:** Admin edits group information;
+- **US022:** Admin deletes a group only when all shares are paid;
+- **US023:** Admin removes a member only when the member has no unpaid shares.
 
-- account registration and password reset;
-- PayID profile management;
-- group invitations and member management;
-- adding, splitting, editing, or deleting expenses;
-- payment statuses and reminders;
-- group editing and deletion;
-- public cloud deployment or payment-gateway integration.
+### Expenses, search, and payments
 
-This keeps the first implementation easy to understand, demonstrate, and extend.
+- **US009:** add an expense with all required fields;
+- **US010:** select the payer;
+- **US011:** select expense participants;
+- **US012:** equal or custom split;
+- **US013:** combined title/category/date search and filtering;
+- **US014:** view payer, participants, shares, and status;
+- **US015:** view and copy the payer's PayID;
+- **US016:** mark the signed-in participant's own share as paid;
+- **US017:** display paid, unpaid, due-tomorrow, and overdue reminders;
+- **US019:** Admin edits an expense;
+- **US021:** Admin deletes an expense;
+- **US025:** Admin corrects existing split amounts.
+
+### Roles and permissions
+
+- A **Group Member** can view groups and expenses, add expenses, search, copy PayID, mark their own share paid, and leave when settled.
+- A **Group Admin** can also edit/delete the group, invite/remove members, edit/delete expenses, and correct splits.
+- Admin-only controls are hidden from Members, and direct access to their URLs returns HTTP 403.
+
+## Important demo simplifications
+
+- **SQLite** is used instead of PostgreSQL so the application starts on a Mac without installing a database server.
+- Password reset does not send email. For the local demonstration, a recognised email opens the new-password form directly.
+- Payment happens outside ExpenseMate. The app displays/copies PayID and records payment status.
+- Reminder status is calculated from the due date when a page is opened; no background email service is required.
+- Direct payment gateways, cloud deployment, native mobile code, load testing, penetration testing, and external APIs are outside this build.
 
 ## Technology stack
 
 - Python 3.10 or newer
-- Django 5.2.16 LTS
+- Django 5.2 LTS
 - SQLite
 - Django templates
 - HTML5 and CSS3
-- Bootstrap 5 CDN link with a complete local custom stylesheet, so the interface remains readable even when the CDN is unavailable
+- Bootstrap 5-compatible markup
+- small vanilla JavaScript for PayID copy and custom-split visibility
 - Django `TestCase`
 
-## Application URL
+---
 
-After starting the development server, open:
+# Run on macOS
 
-**http://127.0.0.1:8000/**
+## Fastest method
 
-This starter is not deployed to a public hosting service. The link above is the local development URL.
+### 1. Download and extract the repository
 
-## Fastest way to run it
+Open Terminal and move into the extracted folder. The easiest method is to type `cd `, drag the **ExpenseMate** folder into Terminal, and press Return.
 
-### macOS or Linux
+Example:
 
-From the repository folder:
+```bash
+cd ~/Downloads/ExpenseMate
+```
+
+### 2. Start the demo
 
 ```bash
 bash start_demo.sh
 ```
 
-The script creates `.venv`, installs dependencies, applies migrations, prepares demo data, and starts the server.
+The script:
 
-### Windows
+1. creates `.venv`;
+2. installs Django;
+3. applies migrations;
+4. recreates predictable test accounts, groups, invitations, expenses, and shares;
+5. starts the local server.
 
-From Command Prompt:
+### 3. Open the application
 
-```bat
-start_demo.bat
+Open this local URL in Safari, Chrome, or Firefox:
+
+**http://127.0.0.1:8000/**
+
+Keep Terminal open while using the application.
+
+### 4. Stop the server
+
+Press:
+
+```text
+Control + C
 ```
 
-Then open **http://127.0.0.1:8000/**.
+## Repeat launch without reinstalling everything
+
+```bash
+cd ~/Downloads/ExpenseMate
+source .venv/bin/activate
+python manage.py setup_demo
+python manage.py runserver
+```
+
+`setup_demo` resets the seeded demonstration data, so deleted groups, changed passwords, accepted invitations, and paid shares return to their initial state.
 
 ## Manual setup
-
-### 1. Create a virtual environment
-
-macOS or Linux:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-```
-
-Windows:
-
-```bat
-py -m venv .venv
-.venv\Scripts\activate
-```
-
-### 2. Install dependencies
-
-```bash
+python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-```
-
-### 3. Prepare the database and demo account
-
-```bash
 python manage.py setup_demo
-```
-
-`setup_demo` is repeatable. It applies migrations and recreates the expected demo users, passwords, groups, and memberships without duplicating them.
-
-### 4. Start the application
-
-```bash
 python manage.py runserver
 ```
 
-### 5. Open the application
+---
 
-Open **http://127.0.0.1:8000/** in Chrome, Safari, or Firefox.
+# Demo accounts
 
-## Demo login
+All seeded users use the same password: `Password1234`.
 
-```text
-Email:    irina@torrens.edu.au
-Password: ExpenseMate123!
-```
+| Role/example | Email | PayID |
+|---|---|---|
+| Irina — main Group Admin | `irina@test.com` | `irina@payid.bank` |
+| Nicolas — Member with unpaid shares and invitations | `nicolas@test.com` | `nicolas@payid.bank` |
+| Jobaida — Member with paid shares | `jobaida@test.com` | `jobaida@payid.bank` |
+| Samesh — payer/participant example | `samesh@test.com` | `samesh@payid.bank` |
 
-The demo setup creates two groups for Irina:
+Every application screen includes **one compact demo-data card** for one main test case on that screen. It contains only the values needed during the demonstration, while full steps, expected results, and all negative scenarios remain in [docs/MANUAL_TEST_CASES.md](docs/MANUAL_TEST_CASES.md).
 
-- **Grocery** — four members;
-- **Summer trip** — three members.
+![My groups](docs/screenshots/my-groups.png)
 
-## How to test the implemented scenarios
+![Add expense](docs/screenshots/add-expense.png)
 
-### Successful login
+![Expense details](docs/screenshots/expense-detail.png)
 
-1. Open **http://127.0.0.1:8000/**.
-2. Enter the demo email and password.
-3. Select **Sign in**.
-4. Confirm that the **My Groups** page appears.
+---
 
-### Invalid login error
+# Demonstration test list
 
-1. Enter `irina@torrens.edu.au`.
-2. Enter any incorrect password.
-3. Select **Sign in**.
-4. Confirm that the generic invalid-credentials message appears and access is denied.
+The following cases can be demonstrated from the UI. Reset with `python manage.py setup_demo` whenever a case changes or deletes seeded data.
 
-![Invalid login](docs/screenshots/invalid-login.png)
+## Functional cases
 
-### Successful group creation
+### Account Management
 
-1. Sign in with the demo account.
-2. Select **Create group**.
-3. Enter a title such as `Flatmates`.
-4. Choose a category and default split.
-5. Select **Create group**.
-6. Confirm that a success message appears and the group is listed under **My Groups**.
-7. Confirm that the role badge is **Admin**.
+- [ ] **TC-001:** registration;
+- [ ] **TC-002:** successful login;
+- [ ] **TC-003:** password reset and login with the new password.
 
-### Empty group-title error
+### Profile Management
 
-1. Open **Create group**.
-2. Leave **Group title** empty.
-3. Select **Create group**.
-4. Confirm that `Group title is required.` appears and the group is not saved.
+- [ ] **TC-004:** add or update PayID.
 
-![Invalid group](docs/screenshots/invalid-group.png)
+### Group Operations
 
-### Group-title length error
+- [ ] **TC-005:** create group and receive Admin role;
+- [ ] **TC-006:** Admin edits group information; Member has no edit control;
+- [ ] **TC-007:** delete a fully settled group.
 
-1. Open **Create group**.
-2. Enter more than 100 characters in the title. The browser limits normal typing to 100 characters; the server-side rule can also be tested through an automated test or a modified request.
-3. Confirm that the request is rejected and no group is created.
+### Membership Management
 
-## Automated tests
+- [ ] **TC-008:** invite a registered user;
+- [ ] **TC-009:** accept or decline an invitation;
+- [ ] **TC-010:** leave a settled group;
+- [ ] **TC-011:** Admin removes a settled member.
 
-Run all Django tests:
+### Expense Management
+
+- [ ] **TC-012:** add expense;
+- [ ] **TC-013:** select payer;
+- [ ] **TC-014:** select participants and exclude another member;
+- [ ] **TC-015:** equal and custom splits;
+- [ ] **TC-016:** Admin edits expense; Member cannot edit;
+- [ ] **TC-017:** Admin deletes expense;
+- [ ] **TC-018:** Admin corrects split amounts.
+
+### Viewing and Searching
+
+- [ ] **TC-019:** view all groups;
+- [ ] **TC-020:** view group details, members, roles, and expenses;
+- [ ] **TC-021:** title/category/date filtering and combined filters;
+- [ ] **TC-022:** view full expense details and share statuses.
+
+### Payment Flow
+
+- [ ] **TC-023:** view and copy PayID;
+- [ ] **TC-024:** participant marks their share paid;
+- [ ] **TC-025:** paid/due-tomorrow/overdue reminder states.
+
+## Non-functional manual cases
+
+- [ ] **TC-026:** core flow in Chrome;
+- [ ] **TC-027:** core flow in Firefox;
+- [ ] **TC-028:** core flow in Safari;
+- [ ] **TC-029:** 1920×1080 and 1366×768 desktop/laptop layout;
+- [ ] **TC-030:** 768×1024 tablet layout;
+- [ ] **TC-031:** 375×812 smartphone layout and controls.
+
+## Negative scenarios
+
+- [ ] **TC-N001:** invalid registration email;
+- [ ] **TC-N002:** weak password;
+- [ ] **TC-N003:** wrong password;
+- [ ] **TC-N004:** unknown login email;
+- [ ] **TC-N005:** group deletion blocked by unpaid shares;
+- [ ] **TC-N006:** password confirmation mismatch;
+- [ ] **TC-N007:** leaving a group blocked by unpaid share;
+- [ ] **TC-N008:** removing a member blocked by unpaid share;
+- [ ] **TC-N009:** custom shares do not total the expense;
+- [ ] **TC-N010:** Member cannot edit expense;
+- [ ] **TC-N011:** Member cannot delete expense;
+- [ ] **TC-N012:** payer cannot mark own payer share paid;
+- [ ] **TC-N013:** invite unknown email;
+- [ ] **TC-N014:** invite already-invited user;
+- [ ] **TC-N015:** invite existing member;
+- [ ] **TC-N016:** accept expired invitation;
+- [ ] **TC-N017:** missing expense title;
+- [ ] **TC-N018:** negative expense amount;
+- [ ] **TC-N019:** negative custom share;
+- [ ] **TC-N020:** duplicate account;
+- [ ] **TC-N021:** duplicate expense;
+- [ ] **TC-N022:** duplicate group;
+- [ ] **TC-N023:** missing group title or description;
+- [ ] **TC-N024:** missing required expense fields;
+- [ ] **TC-N025:** no payer selected;
+- [ ] **TC-N026:** no participants selected;
+- [ ] **TC-N027:** zero expense amount;
+- [ ] **TC-N028:** missing account name;
+- [ ] **TC-N029:** password reset for unknown email;
+- [ ] **TC-N030:** Member cannot delete group;
+- [ ] **TC-N031:** Member cannot invite or remove members.
+
+---
+
+# Automated tests
+
+After the environment is active:
 
 ```bash
 python manage.py test
 ```
 
-The tests cover:
+The test modules cover account validation, login, password reset, PayID, group CRUD, invitations, membership rules, permissions, expense CRUD, equal/custom split calculations, duplicate detection, search, PayID display, payment status, and reminders.
 
-- successful login;
-- invalid-login error handling;
-- redirecting unauthenticated users;
-- redirecting an already authenticated user away from login;
-- group creation;
-- automatic Admin membership;
-- empty-title validation;
-- 100-character title validation;
-- preventing users from seeing groups where they have no membership.
+You can also run one app at a time:
 
-## Project structure
+```bash
+python manage.py test accounts
+python manage.py test groups
+python manage.py test expenses
+```
+
+# Project structure
 
 ```text
 ExpenseMate/
-├── accounts/                     # Email-based user and login feature
-│   ├── migrations/
-│   ├── forms.py
-│   ├── models.py
-│   ├── tests.py
-│   ├── urls.py
-│   └── views.py
-├── expensemate/                  # Django project settings and root URLs
-├── groups/                       # Group and GroupMembership feature
-│   ├── management/commands/
-│   │   └── setup_demo.py
-│   ├── migrations/
-│   ├── forms.py
-│   ├── models.py
-│   ├── tests.py
-│   ├── urls.py
-│   └── views.py
+├── accounts/                 # Registration, login, reset, profile and PayID
+├── groups/                   # Groups, memberships, invitations and permissions
+├── expenses/                 # Expenses, shares, split logic, search and payments
+├── expensemate/              # Settings, root URLs and screen test-data mapping
 ├── templates/
-│   ├── accounts/login.html
-│   ├── groups/group_form.html
-│   ├── groups/group_list.html
-│   └── base.html
+│   ├── accounts/
+│   ├── groups/
+│   ├── expenses/
+│   └── includes/demo_test_data.html
 ├── static/css/expensemate.css
-├── docs/screenshots/
+├── docs/
+│   ├── MANUAL_TEST_CASES.md
+│   ├── screenshots/
+│   └── superpowers/
 ├── tools/
+│   ├── render_screenshots.py
+│   └── verify_repository.py
 ├── manage.py
 ├── requirements.txt
 ├── start_demo.sh
 └── start_demo.bat
 ```
 
-## Design and implementation decisions
+# Code design
 
-- **Email is the login identifier.** ExpenseMate requirements describe login using email and password, so the starter uses a custom Django user model instead of treating email as an optional profile field.
-- **Group membership is separate from group ownership.** This supports the future distinction between Group Admin and Group Member without redesigning the database.
-- **Creation is atomic.** The group and the creator's Admin membership are stored together; a partial group cannot be left behind if membership creation fails.
-- **Errors are safe and specific.** Login errors do not reveal whether an email exists, while group-form errors explain exactly what needs correction.
-- **The UI is server-rendered.** This is the smallest implementation consistent with the planned Django stack and is easy to demonstrate locally.
-
-## Inspiration from ExpenseSplitter
-
-The repository uses the strongest high-level ideas from the public reference project:
-
-- a small Django application rather than a separate API and JavaScript frontend;
-- a responsive web interface;
-- clear separation between models, forms, views, URLs, and templates;
-- local SQLite storage for a student MVP;
-- a feature-led README with screenshots and a direct demonstration flow.
-
-Reference: https://github.com/wkostusiak/ExpenseSplitter
-
-ExpenseMate's models, role logic, validation rules, templates, tests, and source code were written specifically for the uploaded ExpenseMate requirements. No source files from the reference repository were copied.
-
-## Future development order
-
-A practical next sequence is:
-
-1. user registration and profile/PayID;
-2. invitations and Group Member role workflows;
-3. add expense with payer and participants;
-4. equal and custom split calculation;
-5. expense details and Paid/Unpaid/Overdue statuses;
-6. search, edit, delete, and reminders.
-
-## License
-
-MIT License. See [LICENSE](LICENSE).
+- Models are grouped by their real responsibility rather than placed in one large app.
+- Forms contain input validation; short service modules contain permission and split helpers; views coordinate requests and responses.
+- Equal splitting works in cents, so the saved shares always add up exactly to the expense amount.
+- Group and member restrictions query unpaid `ExpenseShare` records directly.
+- Screen-specific demo values are stored once in `expensemate/demo_data.py`, not repeated across templates.
+- The project deliberately avoids APIs, asynchronous jobs, frontend frameworks, and unnecessary abstraction.

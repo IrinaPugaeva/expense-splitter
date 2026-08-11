@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ group.title }} expenses · ExpenseMate{% endblock %}
+{% block content %}
+<section class="page-heading-row"><div><p class="eyebrow">Viewing and searching · US005 / US013</p><h1>{{ group.title }} — expenses</h1><p class="muted">Search by title, category, or date range.</p></div><a class="action-button" href="{% url 'expense_create' group.pk %}">+ Add expense</a></section>
+<nav class="subnav"><a href="{% url 'group_detail' group.pk %}">Overview</a><a class="active" href="{% url 'expense_list' group.pk %}">Expenses</a><a href="{% url 'group_members' group.pk %}">Members</a></nav>
+<section class="card-panel filter-panel"><form method="get" class="filter-grid" novalidate>{% for field in form %}<div class="field-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>{% endfor %}<div class="filter-actions"><button class="action-button button-element" type="submit">Search</button><a class="cancel-button" href="{% url 'expense_list' group.pk %}">Clear</a></div></form></section>
+<section class="card-panel groups-panel top-gap">
+    <div class="section-title-row"><div><p class="card-kicker">Results</p><h2>{{ expenses|length }} expense{{ expenses|length|pluralize }}</h2></div></div>
+    {% if expenses %}<div class="expense-list">{% for expense in expenses %}<a class="expense-row" href="{% url 'expense_detail' expense.pk %}"><div><strong>{{ expense.title }}</strong><span>{{ expense.get_category_display }} · {{ expense.date }} · paid by {{ expense.payer.display_name }}</span></div><div class="expense-amount"><strong>AUD {{ expense.amount }}</strong><span>{% if expense.is_settled %}Settled{% else %}Open{% endif %}</span></div></a>{% endfor %}</div>{% else %}<div class="empty-state"><p>No expenses found.</p></div>{% endif %}
+</section>
+{% endblock %}

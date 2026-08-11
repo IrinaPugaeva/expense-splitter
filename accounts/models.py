@@ -4,7 +4,7 @@ from django.db import models
 
 
 class UserManager(BaseUserManager):
-    """User manager that treats email as the only login identifier."""
+    """Create users whose email address is the login identifier."""
 
     use_in_migrations = True
 
@@ -25,23 +25,26 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email: str, password: str | None = None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-
         if extra_fields.get("is_staff") is not True:
             raise ValueError("Superuser must have is_staff=True.")
         if extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True.")
-
         return self._create_user(email, password, **extra_fields)
 
 
 class User(AbstractUser):
     username = None
     email = models.EmailField("email address", unique=True)
+    payid = models.CharField(max_length=100, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS: list[str] = []
 
     objects = UserManager()
 
-    def __str__(self) -> str:
+    @property
+    def display_name(self) -> str:
         return self.get_full_name() or self.email
+
+    def __str__(self) -> str:
+        return self.display_name

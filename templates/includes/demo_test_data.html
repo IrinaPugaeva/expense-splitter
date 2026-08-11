@@ -1,0 +1,12 @@
+{% if demo_case %}
+<aside
+    class="demo-data-card"
+    data-test-case="{{ demo_case.id }}"
+    aria-label="Demo data for {{ demo_case.id }}"
+>
+    <strong>{{ demo_case.heading }}</strong>
+    <div class="demo-data-values">
+        {% for line in demo_case.lines %}<code>{{ line }}</code>{% endfor %}
+    </div>
+</aside>
+{% endif %}

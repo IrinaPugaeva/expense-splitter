@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ group.title }} · ExpenseMate{% endblock %}
+{% block content %}
+{% if action_error %}<div class="form-alert">{{ action_error }}</div>{% endif %}
+<section class="page-heading-row">
+    <div><p class="eyebrow">Group dashboard · US008</p><h1>{{ group.title }}</h1><p class="muted">{{ group.description }}</p></div>
+    <div class="heading-actions">
+        <a class="action-button" href="{% url 'expense_create' group.pk %}">+ Add expense</a>
+        {% if membership.role == 'admin' %}<a class="cancel-button" href="{% url 'group_edit' group.pk %}">Edit group</a>{% endif %}
+    </div>
+</section>
+<nav class="subnav">
+    <a class="active" href="{% url 'group_detail' group.pk %}">Overview</a>
+    <a href="{% url 'expense_list' group.pk %}">Expenses</a>
+    <a href="{% url 'group_members' group.pk %}">Members</a>
+</nav>
+<section class="dashboard-grid">
+    <div class="card-panel groups-panel">
+        <div class="section-title-row"><div><p class="card-kicker">Recent expenses</p><h2>Latest group activity</h2></div><a href="{% url 'expense_list' group.pk %}">View all</a></div>
+        {% if recent_expenses %}
+            <div class="expense-list compact-list">
+                {% for expense in recent_expenses %}
+                    <a class="expense-row" href="{% url 'expense_detail' expense.pk %}">
+                        <div><strong>{{ expense.title }}</strong><span>Paid by {{ expense.payer.display_name }} · due {{ expense.due_date }}</span></div>
+                        <strong>AUD {{ expense.amount }}</strong>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}<div class="empty-state"><p>No expenses yet.</p></div>{% endif %}
+    </div>
+    <aside class="card-panel starter-panel">
+        <p class="card-kicker">Group members</p><h2>{{ memberships|length }} people</h2>
+        <div class="member-mini-list">
+            {% for item in memberships %}<div><span class="member-avatar">{{ item.user.display_name|slice:':1'|upper }}</span><span>{{ item.user.display_name }}</span><span class="role-badge role-{{ item.role }}">{{ item.get_role_display }}</span></div>{% endfor %}
+        </div>
+        <a class="cancel-button full-width" href="{% url 'group_members' group.pk %}">Open member list</a>
+        <div class="mini-rule"></div>
+        {% if membership.role == 'member' %}
+            <form method="post" action="{% url 'group_leave' group.pk %}" onsubmit="return confirm('Leave this group?')">{% csrf_token %}<button class="danger-link" type="submit">Leave group</button></form>
+        {% else %}
+            <a class="danger-link" href="{% url 'group_delete' group.pk %}">Delete group</a>
+        {% endif %}
+    </aside>
+</section>
+{% endblock %}

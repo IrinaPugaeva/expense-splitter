@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Profile · ExpenseMate{% endblock %}
+{% block content %}
+<section class="page-heading-row compact-heading">
+    <div>
+        <p class="eyebrow">Profile management · US003</p>
+        <h1>My profile</h1>
+        <p class="muted">Add or update the PayID that group members use when paying you.</p>
+    </div>
+</section>
+<section class="form-layout narrow-layout">
+    <div class="card-panel form-panel">
+        <div class="field-group">
+            <label>Email</label>
+            <input class="form-control" value="{{ user.email }}" disabled>
+        </div>
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="field-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+            {% endfor %}
+            <button class="action-button button-element" type="submit">Save profile</button>
+        </form>
+    </div>
+    <aside class="card-panel info-panel">
+        <div class="info-icon">P</div>
+        <p class="card-kicker">Payment flow</p>
+        <h2>PayID stays visible</h2>
+        <p>Your PayID is displayed only to members who owe you for a shared expense.</p>
+    </aside>
+</section>
+{% endblock %}

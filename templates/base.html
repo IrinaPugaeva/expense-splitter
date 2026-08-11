@@ -12,12 +12,7 @@
 <body class="{% if user.is_authenticated %}app-shell{% else %}public-shell{% endif %}">
 <header class="topbar">
     <a class="brand" href="{% if user.is_authenticated %}{% url 'group_list' %}{% else %}{% url 'login' %}{% endif %}">ExpenseMate</a>
-    {% if user.is_authenticated %}
-        <div class="profile-chip" aria-label="Signed in user">
-            <span class="avatar">{{ user.first_name|default:user.email|slice:':1'|upper }}</span>
-            <span class="profile-name">{{ user.first_name|default:user.email }}</span>
-        </div>
-    {% endif %}
+    {% if user.is_authenticated %}<div class="profile-chip"><span class="avatar">{{ user.display_name|slice:':1'|upper }}</span><span class="profile-name">{{ user.display_name }}</span></div>{% endif %}
 </header>
 
 {% if user.is_authenticated %}
@@ -27,22 +22,15 @@
         <nav class="nav-stack" aria-label="Main navigation">
             <a class="nav-item {% if request.resolver_match.url_name == 'group_list' %}active{% endif %}" href="{% url 'group_list' %}">My groups</a>
             <a class="nav-item {% if request.resolver_match.url_name == 'group_create' %}active{% endif %}" href="{% url 'group_create' %}">Create group</a>
-            <span class="nav-item disabled" aria-disabled="true">Profile <small>later</small></span>
-            <form method="post" action="{% url 'logout' %}" class="logout-form">
-                {% csrf_token %}
-                <button type="submit" class="nav-item nav-button">Sign out</button>
-            </form>
+            <a class="nav-item {% if request.resolver_match.url_name == 'my_payments' %}active{% endif %}" href="{% url 'my_payments' %}">My payments</a>
+            <a class="nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="{% url 'profile' %}">Profile</a>
+            <form method="post" action="{% url 'logout' %}" class="logout-form">{% csrf_token %}<button type="submit" class="nav-item nav-button">Sign out</button></form>
         </nav>
     </aside>
     <main class="content">
-        {% if messages %}
-            <div class="message-stack" aria-live="polite">
-                {% for message in messages %}
-                    <div class="alert alert-success">{{ message }}</div>
-                {% endfor %}
-            </div>
-        {% endif %}
+        {% if messages %}<div class="message-stack" aria-live="polite">{% for message in messages %}<div class="alert-message alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}</div>{% endif %}
         {% block content %}{% endblock %}
+        {% include "includes/demo_test_data.html" %}
     </main>
 </div>
 {% else %}

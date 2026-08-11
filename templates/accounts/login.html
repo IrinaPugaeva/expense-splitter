@@ -6,48 +6,33 @@
         <p class="eyebrow">Shared expense management</p>
         <h1>Shared expenses made simple</h1>
         <p class="hero-subtitle">Create groups, split expenses and track shares in one clear place.</p>
-        <div class="feature-pills" aria-label="Application highlights">
-            <span>Responsive web app</span>
-            <span>Role-based groups</span>
-            <span>Simple local demo</span>
-        </div>
     </div>
 
     <div class="auth-card card-panel">
         <p class="card-kicker">Welcome back</p>
         <h2>Sign in</h2>
-        <p class="muted">Use the demo account or your registered ExpenseMate account.</p>
-
+        <p class="muted">Use a demo account or your registered ExpenseMate account.</p>
         <form method="post" novalidate>
             {% csrf_token %}
             {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-
-            {% if form.non_field_errors %}
-                <div class="form-alert" role="alert">
-                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
-                </div>
-            {% endif %}
-
+            {% if form.non_field_errors %}<div class="form-alert" role="alert">{% for error in form.non_field_errors %}{{ error }}{% endfor %}</div>{% endif %}
             <div class="field-group">
-                <label for="{{ form.username.id_for_label }}">Email</label>
-                {{ form.username }}
-                {% for error in form.username.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                <label for="{{ form.email.id_for_label }}">Email</label>
+                {{ form.email }}
+                {% for error in form.email.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
             </div>
             <div class="field-group">
                 <label for="{{ form.password.id_for_label }}">Password</label>
                 {{ form.password }}
                 {% for error in form.password.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
             </div>
-
             <button class="btn-primary-wide" type="submit">Sign in</button>
-            <button class="btn-secondary-wide" type="button" disabled title="Registration is outside the current starter scope">Create account — later</button>
         </form>
-
-        <div class="demo-credentials">
-            <strong>Demo account</strong>
-            <code>irina@torrens.edu.au</code>
-            <code>ExpenseMate123!</code>
+        <div class="auth-links">
+            <a href="{% url 'register' %}">Create account</a>
+            <a href="{% url 'password_reset' %}">Forgot password?</a>
         </div>
+        {% include "includes/demo_test_data.html" %}
     </div>
 </section>
 {% endblock %}
